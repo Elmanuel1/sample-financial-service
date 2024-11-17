@@ -1,0 +1,17 @@
+services:
+  postgres-lab:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=spherelab
+      - POSTGRES_PASSWORD=spherelab
+      - POSTGRES_DB=spherelab
+
+  cross-border:
+    image: cross-border:latest
+    links:
+      - postgres-lab:postgres-lab
+    ports:
+      - 8082:8080
+
+    env_file:
+      - "spherelab.env"

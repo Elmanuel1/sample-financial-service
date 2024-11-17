@@ -1,0 +1,29 @@
+app:
+  margin-rates:
+    "USD": "0.02"
+    "EUR": "0.03"
+    "GBP": "0.04"
+    "JPY": "0.05"
+    "AUD": "0.06"
+
+  settlement-poll-size: 50
+  max-settlement-attempts: 3
+
+spring:
+  application:
+    name: passport
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spherelab
+    username: kratos
+    password: secret
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: filesystem:flyway
+
+logging:
+  level:
+    root: INFO
+    com.spherelabs: DEBUG
