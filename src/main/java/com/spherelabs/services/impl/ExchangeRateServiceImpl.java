@@ -1,4 +1,5 @@
 package com.spherelabs.services.impl;
+
 import com.spherelabs.error.Failure;
 import com.spherelabs.error.FailureCode;
 import com.spherelabs.model.ExchangeRate;
@@ -8,8 +9,6 @@ import com.spherelabs.services.ExchangeRateService;
 import io.vavr.control.Either;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,7 +28,6 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
      * This method caches the successful result to avoid constant database reads (ideal case)
      */
     @Override
-    @Cacheable(value = "rateCache", key = "#currencyPair",  condition = "#result.isRight()")
     public Either<Failure, ExchangeRate> getLatestRate(String currencyPair) {
         return exchangeRateRepository.getLatestRate(currencyPair)
                 .map(exchangeRate -> new ExchangeRate(exchangeRate.getCurrencyPair(), exchangeRate.getRate(), exchangeRate.getEffectiveDate()));
@@ -39,7 +37,6 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
      * This method caches the successful result to avoid constant database writes
      */
     @Override
-    @CachePut(value = "rateCache", key = "#currencyPair",  condition = "#result.isRight()")
     public Either<Failure, ExchangeRate> addRate(String currencyPair, BigDecimal rate, OffsetDateTime timestamp) {
         //this value has been validated at input in the controller
         String[] pair = currencyPair.split("/");

@@ -117,7 +117,8 @@ public class TransactionServiceImpl implements TransactionService {
             savedTransaction.setStatus(transferResponse.get());
         }
 
-        return transactionRepository.updateStatus(transaction.getId(), savedTransaction.getFailureReason(), savedTransaction.getStatus(), Transaction.Status.FUNDS_LOCKED).peek(transaction1 -> log.info("Transaction {} initiated successfully", transaction1.getId()))
+        return transactionRepository.updateStatus(transaction.getId(), savedTransaction.getFailureReason(), savedTransaction.getStatus(), Transaction.Status.FUNDS_LOCKED)
+            .peek(transaction1 -> log.info("Transaction {} initiated successfully", transaction1.getInternalTransferId()))
             .peekLeft(failure -> log.error("Failed to process transaction. Reason: {}", failure.message(), failure.cause()));
 
     }
