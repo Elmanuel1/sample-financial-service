@@ -59,6 +59,7 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
                 log.debug("No rate found for currency pair: {}. Safe to insert", currencyPair);
                 return Either.right(true);
             }
+            log.error("Failed to get latest rate for currency pair: {}. Reason: {}", currencyPair, latestRate.getLeft().message(), latestRate.getLeft().cause());
             return Either.left(latestRate.getLeft());
         }
 
