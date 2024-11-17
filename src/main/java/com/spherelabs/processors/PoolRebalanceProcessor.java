@@ -121,9 +121,10 @@ public class PoolRebalanceProcessor {
         if (needsRebalancing(pool, metrics, currency)) {
             BigDecimal amount = calculateRebalanceAmount(pool, metrics);
             if (amount.compareTo(minimumRebalanceAmount) >= 0) {
+                //in the case the amount to rebalance by is above the minimum threshold
                 executeRebalancing(currency, amount);
             } else {
-                log.info("Rebalance amount {} for currency {} is above minimum threshold {}", amount, currency, minimumRebalanceAmount);
+                log.info("Rebalance amount {} for currency {} is below minimum threshold {}", amount, currency, minimumRebalanceAmount);
             }
         }
     }

@@ -180,7 +180,9 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Either<Failure, Void> modifyTransaction(List<Currency> currencies,  Transaction transaction) {
-        return exchangeRateService.getLatestRate("%s/%s".formatted(transaction.getFromCurrency(), transaction.getToCurrency()))
+        var pair = "%s/%s".formatted(transaction.getFromCurrency(), transaction.getToCurrency());
+        return exchangeRateService.getLatestRate(pair)
+                .peekLeft(failure -> log.error("Failed to get latest rate for currency pair: {}. Reason: {}", pair, failure.message(), failure.cause()))
                 .mapLeft(failure -> mapNotFoundToSpecificFailure(failure, NO_AVAILABLE_RATE))
                 .peek(exchangeRate -> modifyTransactionFees(transaction, appConfiguration.getMarginRates().get(transaction.getToCurrency()), currencies, exchangeRate))
                 .peek(exchangeRate -> modifySettlementInfo(transaction, currencies))

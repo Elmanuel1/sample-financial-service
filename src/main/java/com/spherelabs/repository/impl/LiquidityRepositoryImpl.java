@@ -53,14 +53,14 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .map(Record1::value1)
                     .orElse(BigDecimal.ZERO);
             
-            if (balance.compareTo(liquidityMovement.amount()) <= 0) {
+            if (balance.compareTo(liquidityMovement.amount().add(liquidityMovement.margin())) <= 0) {
                 throw new ApplicationException(FailureCode.INSUFFICIENT_FUNDS);
             }
 
             DSL.using(config)
                     .update(LIQUIDITY_POOL)
-                    .set(LIQUIDITY_POOL.AVAILABLE_BALANCE, LIQUIDITY_POOL.AVAILABLE_BALANCE.subtract(liquidityMovement.amount()))
-                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.add(liquidityMovement.amount()))
+                    .set(LIQUIDITY_POOL.AVAILABLE_BALANCE, LIQUIDITY_POOL.AVAILABLE_BALANCE.subtract(liquidityMovement.amount()).subtract(liquidityMovement.margin()))
+                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.add(liquidityMovement.amount()).add(liquidityMovement.margin()))
                     .set(LIQUIDITY_POOL.UPDATED_AT, OffsetDateTime.now())
                     .where(LIQUIDITY_POOL.CURRENCY_CODE.eq(liquidityMovement.currencyCode()))
                     .returning()

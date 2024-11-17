@@ -29,8 +29,7 @@ public class ExchangeRateRepositoryImpl implements ExchangeRateRepository {
                 .orderBy(EXCHANGE_RATE.EFFECTIVE_DATE.desc())
                 .limit(1)
                 .fetchOptionalInto(ExchangeRate.class)
-                 .get()
-         ).peekLeft(failure -> log.error("Failed to get latest rate for currency pair: {}. Reason: {}", currencyPair, failure.message(), failure.cause()));
+                 .get());
 
     }
 

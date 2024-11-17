@@ -7,7 +7,7 @@ app:
     "AUD": "0.06"
   settlement-poll-size: 50
   rebalance-minimum-amount: 1000
-  rebalance-threshold-ratio: 0.2
+  rebalance-threshold-ratio: 17
   rebalance-check-minutes: 5000
   rebalance-look-back-minutes: 30
   max-settlement-attempts: 3
