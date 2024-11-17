@@ -66,11 +66,27 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .returning()
                     .execute();
 
+            var marginId = DSL.using(config)
+                    .insertInto(LEDGER)
+                    .set(LEDGER.CURRENCY_CODE, liquidityMovement.currencyCode())
+                    .set(LEDGER.TRANSACTION_TYPE, "margin_lock")
+                    .set(LEDGER.FROM_ACCOUNT, "system") // would be the currency account user
+                    .set(LEDGER.TO_ACCOUNT, "system") // would be the holding account
+                    .set(LEDGER.MARGIN, liquidityMovement.margin())
+                    .set(LEDGER.AMOUNT, liquidityMovement.margin())
+                    .set(LEDGER.TRANSACTION_ID, liquidityMovement.transactionId())
+                    .set(LEDGER.DESCRIPTION, "Margin for transaction " + liquidityMovement.transactionId())
+                    .returning(LEDGER.ID)
+                    .fetchSingle()
+                    .component1();
+
              return DSL.using(config)
                     .insertInto(LEDGER)
                     .set(LEDGER.CURRENCY_CODE, liquidityMovement.currencyCode())
                     .set(LEDGER.TRANSACTION_TYPE, "lock")
                     .set(LEDGER.FROM_ACCOUNT, "system") // would be the currency account user
+                     //would in real life track margin seperately.  but now. it is what it is.
+                     .set(LEDGER.MARGIN, liquidityMovement.margin())
                     .set(LEDGER.TO_ACCOUNT, "system") // would be the holding account
                     .set(LEDGER.AMOUNT, liquidityMovement.amount())
                     .set(LEDGER.TRANSACTION_ID, liquidityMovement.transactionId())
@@ -109,12 +125,25 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
 
             DSL.using(config)
                     .update(LIQUIDITY_POOL)
-                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.subtract(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
+                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.subtract(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class))
+                            .subtract(lockedRecord.get(LEDGER.MARGIN, BigDecimal.class)))
                     .set(LIQUIDITY_POOL.UPDATED_AT, OffsetDateTime.now())
                     .where(LIQUIDITY_POOL.CURRENCY_CODE.eq(lockedRecord.get(LEDGER.CURRENCY_CODE)))
                     .returning()
                     .execute();
 
+            DSL.using(config)
+                    .insertInto(LEDGER)
+                    .set(LEDGER.CURRENCY_CODE, lockedRecord.get(LEDGER.CURRENCY_CODE))
+                    .set(LEDGER.TRANSACTION_TYPE, "debit")
+                    .set(LEDGER.FROM_ACCOUNT, "system") // would be the currency account user
+                    .set(LEDGER.TO_ACCOUNT, "system") // would be the other account
+                    .set(LEDGER.AMOUNT, lockedRecord.get(LEDGER.MARGIN))
+                    .set(LEDGER.TRANSACTION_ID, lockedRecord.get(LEDGER.TRANSACTION_ID))
+                    .set(LEDGER.DESCRIPTION, "Margin on " + lockedRecord.get(LEDGER.TRANSACTION_ID))
+                    .returning(LEDGER.ID)
+                    .fetchSingle()
+                    .component1();
 
             return DSL.using(config)
                     .insertInto(LEDGER)
@@ -170,14 +199,31 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .fetchSingle()
                     .component1();
 
+
+            DSL.using(config)
+                    .insertInto(LEDGER)
+                    .set(LEDGER.CURRENCY_CODE, lockedRecord.get(LEDGER.CURRENCY_CODE))
+                    .set(LEDGER.TRANSACTION_TYPE, "margin_unlock")
+                    .set(LEDGER.FROM_ACCOUNT, "system") // would be the currency account user
+                    .set(LEDGER.TO_ACCOUNT, "system") // would be the other account
+                    .set(LEDGER.AMOUNT, lockedRecord.get(LEDGER.MARGIN))
+                    .set(LEDGER.TRANSACTION_ID, lockedRecord.get(LEDGER.TRANSACTION_ID))
+                    .set(LEDGER.DESCRIPTION, "Margin unlock on " + lockedRecord.get(LEDGER.TRANSACTION_ID))
+                    .returning(LEDGER.ID)
+                    .fetchSingle()
+                    .component1();
+
             DSL.using(config)
                     .update(LIQUIDITY_POOL)
-                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.subtract(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
-                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.AVAILABLE_BALANCE.add(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
+                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.subtract(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class))
+                            .subtract(lockedRecord.get(LEDGER.MARGIN, BigDecimal.class)))
+                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.AVAILABLE_BALANCE.add(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class))
+                            .add(lockedRecord.get(LEDGER.MARGIN, BigDecimal.class)))
                     .set(LIQUIDITY_POOL.UPDATED_AT, OffsetDateTime.now())
                     .where(LIQUIDITY_POOL.CURRENCY_CODE.eq(lockedRecord.get(LEDGER.CURRENCY_CODE)))
                     .returning()
                     .execute();
+
 
           return record;
         }));

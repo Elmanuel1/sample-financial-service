@@ -114,6 +114,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return Eithers.of(() -> dsl.update(TRANSACTION)
                 .set(TRANSACTION.SETTLEMENT_STATUS, newStatus.getValue())
                 .set(TRANSACTION.SETTLEMENT_MESSAGE, message)
+                .set(TRANSACTION.SETTLEMENT_ATTEMPTS, TRANSACTION.SETTLEMENT_ATTEMPTS.plus(1))
                 .set(TRANSACTION.STATUS, TransactionStatus.valueOf(transactionStatus.getValue()))
                 .set(TRANSACTION.UPDATED_AT, OffsetDateTime.now())
                 .where(TRANSACTION.ID.eq(id)
@@ -127,6 +128,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return Eithers.of(() -> dsl.update(TRANSACTION)
                 .set(TRANSACTION.SETTLEMENT_STATUS, newStatus.getValue())
                 .set(TRANSACTION.SETTLEMENT_MESSAGE, message)
+                .set(TRANSACTION.SETTLEMENT_ATTEMPTS, TRANSACTION.SETTLEMENT_ATTEMPTS.plus(1))
                 .set(TRANSACTION.UPDATED_AT, OffsetDateTime.now())
                 .where(TRANSACTION.ID.eq(id)
                 .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
@@ -139,9 +141,10 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return Eithers.of(() -> dsl.update(TRANSACTION)
                 .set(TRANSACTION.SETTLEMENT_STATUS, Transaction.SettlementStatus.SETTLED.getValue())
                 .set(TRANSACTION.UPDATED_AT, OffsetDateTime.now())
+                .set(TRANSACTION.SETTLEMENT_ATTEMPTS, TRANSACTION.SETTLEMENT_ATTEMPTS.plus(1))
                 .set(TRANSACTION.ACTUAL_SETTLEMENT_TIME,  OffsetDateTime.now())
                 .where(TRANSACTION.ID.eq(id)
-                        .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
+                .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
                 .returning()
                 .fetchSingle(MAPPER));
     }

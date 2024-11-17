@@ -24,7 +24,8 @@ CREATE TYPE transaction_type AS ENUM (
     'credit',   -- Funds credited to account
     'lock',     -- Funds locked for transaction
     'unlock',   -- Funds unlocked after transaction
-    'margin'       -- margin charged for transaction
+    'margin_lock'       -- margin charged for transaction
+    'margin_unlock'       -- margin charged for transaction
 );
 
 CREATE TYPE transaction_status AS ENUM (
@@ -48,10 +49,11 @@ CREATE TABLE liquidity_pool (
 
 CREATE TABLE ledger (
  id BIGSERIAL PRIMARY KEY,
+ margin DECIMAL(18, 6) DEFAULT 0, --FOR record sake
  currency_code CHAR(3) NOT NULL REFERENCES currency(code),
  from_account VARCHAR(50) NOT NULL,
  to_account VARCHAR(50) NOT NULL,
- transaction_type VARCHAR(10) NOT NULL,
+ transaction_type VARCHAR(50) NOT NULL,
  amount DECIMAL(18,6) NOT NULL,
  transaction_id VARCHAR(50) NOT NULL,
  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

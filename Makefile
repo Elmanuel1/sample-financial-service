@@ -36,7 +36,7 @@ logs:
 
 # Combined commands
 .PHONY: deploy
-deploy: build up
+deploy: down build up
 
 # Clean up commands
 .PHONY: clean

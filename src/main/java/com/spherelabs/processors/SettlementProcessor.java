@@ -49,8 +49,9 @@ public class SettlementProcessor {
                 break;
                 // IN the real world, we will check the status of the transaction against another source and take appropriate action
             case INITIATED:
+            case PROCESSING:
                 log.warn("Transaction requires intervention. Another job handle these types. Transaction: {}", transaction.getInternalTransferId());
-                transactionRepository.markSettlementStatus(transaction.getId(), "Transaction requires intervention", Transaction.SettlementStatus.REQUIRE_INTERVENTION, Transaction.Status.EXPIRED, Transaction.Status.INITIATED)
+                transactionRepository.markSettlementStatus(transaction.getId(), "Transaction requires intervention", Transaction.SettlementStatus.REQUIRE_INTERVENTION, Transaction.Status.EXPIRED, transaction.getStatus())
                         .peekLeft(failure -> log.error("Failed to mark transaction as require intervention. Reason: {}", failure.message(), failure.cause()));
                 break;
             default:
@@ -95,7 +96,7 @@ public class SettlementProcessor {
     }
 
     private void settle(Transaction transaction) {
-        log.warn("Transaction with lock status has already been unlocked. Transaction: {}. Unlock id {}", transaction.getId(), transaction.getLockedId());
+        log.warn("Transaction with lock status trying to be settled. Transaction: {}. Lock id {}", transaction.getId(), transaction.getLockedId());
         // not sure why we would have a transaction that has been unlocked but not completed
         var lockEntry = ledgerRepository.getByLockId(transaction.getLockedId())
                 .peekLeft(failure -> log.error("Failed to get ledger entry for unlock id: {}. Reason: {}", transaction.getUnlockedId(), failure.message(), failure.cause()));

@@ -12,10 +12,11 @@ public record LiquidityMovement(
         OffsetDateTime eventTime,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
-        String description
+        String description,
+        BigDecimal margin
 ) {
-    public LiquidityMovement(String transactionId, String currencyCode, Transaction.Type transactionType, BigDecimal amount, OffsetDateTime eventTime, String description) {
-        this(null, transactionId, currencyCode, transactionType, amount, eventTime, null, null, description);
+    public LiquidityMovement(String transactionId, String currencyCode, Transaction.Type transactionType, BigDecimal amount, OffsetDateTime eventTime, String description, BigDecimal margin) {
+        this(null, transactionId, currencyCode, transactionType, amount, eventTime, null, null, description, margin);
     }
 
     public static LiquidityMovement lockFrom(Transaction transaction) {
@@ -25,7 +26,8 @@ public record LiquidityMovement(
                 Transaction.Type.LOCK,
                 transaction.getToAmount(),
                 transaction.getCreatedAt(),
-                transaction.getDescription()
+                transaction.getDescription(),
+                transaction.getMargin()
         );
     }
 }
