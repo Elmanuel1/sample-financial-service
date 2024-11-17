@@ -15,7 +15,8 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-
+node.pid
+node.log
 ### Eclipse ###
 .apt_generated
 .classpath
@@ -25,6 +26,7 @@ out/
 .springBeans
 .sts4-cache
 bin/
+.idea
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
