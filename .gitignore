@@ -15,7 +15,8 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-
+node.pid
+node.log
 ### Eclipse ###
 .apt_generated
 .classpath
