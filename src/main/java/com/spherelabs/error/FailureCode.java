@@ -14,7 +14,7 @@ public enum FailureCode {
     SENDING_CURRENCY_NOT_SUPPORTED("sending_currency_not_supported", "Currency not supported", HttpStatus.UNPROCESSABLE_ENTITY, false),
     RECEIVING_CURRENCY_NOT_SUPPORTED("invalid_receiving_currency", "Currency not supported", HttpStatus.UNPROCESSABLE_ENTITY, false),
     OLD_FX_RATE("old_fx_rate_error", "Old fx rate error", HttpStatus.UNPROCESSABLE_ENTITY, false),
-    NO_AVAILABLE_RATE("no_available_rate", "No available rate", HttpStatus.INTERNAL_SERVER_ERROR, false),
+    NO_AVAILABLE_RATE("no_available_rate", "No available rate. We keep updating new rates. Please check back later", HttpStatus.INTERNAL_SERVER_ERROR, false),
     INSUFFICIENT_FUNDS("insufficient_funds", "Insufficient funds", HttpStatus.INTERNAL_SERVER_ERROR, false);
 
     private final String code;

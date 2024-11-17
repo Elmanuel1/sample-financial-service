@@ -38,7 +38,7 @@ public class PoolRebalanceProcessor {
     @Value("${app.rebalance-safety-buffer-ratio:0.3}")
     private BigDecimal safetyBufferRatio;
 
-    @Scheduled(fixedRateString = "${app.rebalance-check-minutes:5}")
+    @Scheduled(fixedRateString = "${app.rebalance-check-milliseconds:12000}")
     public void analyzeAndRebalance() {
         try {
             log.info("Starting pool rebalance analysis");
