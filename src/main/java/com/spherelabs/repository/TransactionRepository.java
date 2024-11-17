@@ -4,7 +4,6 @@ import com.spherelabs.error.Failure;
 import com.spherelabs.model.Transaction;
 import io.vavr.control.Either;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 
@@ -58,7 +57,7 @@ public interface TransactionRepository {
      * @return Either a Failure or the list of transactions
      */
 
-    Either<Failure, List<Transaction>> getSettlementEligibleTransactions(OffsetDateTime settlementDate, int limit);
+    Either<Failure, List<Transaction>> getSettlementEligibleTransactions(int limit);
 
     /**
      * Changes the status of a transaction and set the settlement status

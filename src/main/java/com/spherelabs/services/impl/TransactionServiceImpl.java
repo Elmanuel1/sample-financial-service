@@ -52,14 +52,14 @@ public class TransactionServiceImpl implements TransactionService {
         // checks if an error occurred while fetching the transaction. Could be not found error
         if (previousRecord.isLeft()) {
             if (previousRecord.getLeft().code().equals(NOT_FOUND.getCode())) {
-                log.debug("Transaction {} not found. Proceeding to process transaction", transaction.getTransferId());
+                log.debug("Transaction {} not found. Proceeding to process transaction", transaction.getInternalTransferId());
                 return processTransaction(transaction);
             }
-            log.error("Failed to fetch transaction {}. Reason: {}", transaction.getTransferId(), previousRecord.getLeft().message(), previousRecord.getLeft().cause());
+            log.error("Failed to fetch transaction {}. Reason: {}", transaction.getInternalTransferId(), previousRecord.getLeft().message(), previousRecord.getLeft().cause());
             return Either.left(Failure.from(UNKNOWN_ERROR));
         }
 
-        log.info("Transaction {} exist", transaction.getTransferId());
+        log.info("Transaction {} exist", transaction.getInternalTransferId());
         return previousRecord.map(this::markAsProcessingIfApplicable);
     }
 
@@ -72,7 +72,7 @@ public class TransactionServiceImpl implements TransactionService {
             transaction.setFailureReason("Could not retrieve currency.  %s".formatted(currencies.getLeft().message()));
             transaction.setStatus(Transaction.Status.RETRY);
             transactionRepository.recordFailedEvent(transaction)
-                    .peekLeft(failure -> log.error("Failed to insert failed transaction {}. Reason: {}", transaction.getTransferId(), failure.message(), failure.cause()));
+                    .peekLeft(failure -> log.error("Failed to insert failed transaction {}. Reason: {}", transaction.getInternalTransferId(), failure.message(), failure.cause()));
             return Either.left(currencies.getLeft());
         }
 
@@ -84,11 +84,11 @@ public class TransactionServiceImpl implements TransactionService {
             transaction.setFailureReason("Validation failed. %s".formatted(validation.getLeft().message()));
             transaction.setStatus(Transaction.Status.RETRY);
             transactionRepository.recordFailedEvent(transaction)
-                    .peekLeft(failure -> log.error("Failed to insert failed transaction {}. Reason: {}", transaction.getTransferId(), failure.message(), failure.cause()));
+                    .peekLeft(failure -> log.error("Failed to insert failed transaction {}. Reason: {}", transaction.getInternalTransferId(), failure.message(), failure.cause()));
             return Either.left(validation.getLeft());
         }
 
-        log.debug("Transaction {} passed validation", transaction.getTransferId());
+        log.debug("Transaction {} passed validation", transaction.getInternalTransferId());
 
         // modify the transaction with the exchange rate, fees and settlement info
         var recordedMessage =  modifyTransaction(currencies.get(), transaction)
@@ -117,7 +117,7 @@ public class TransactionServiceImpl implements TransactionService {
             savedTransaction.setStatus(transferResponse.get());
         }
 
-        return transactionRepository.updateStatus(transaction.getId(), savedTransaction.getFailureReason(), transaction.getStatus(), Transaction.Status.FUNDS_LOCKED).peek(transaction1 -> log.info("Transaction {} initiated successfully", transaction1.getId()))
+        return transactionRepository.updateStatus(transaction.getId(), savedTransaction.getFailureReason(), savedTransaction.getStatus(), Transaction.Status.FUNDS_LOCKED).peek(transaction1 -> log.info("Transaction {} initiated successfully", transaction1.getId()))
             .peekLeft(failure -> log.error("Failed to process transaction. Reason: {}", failure.message(), failure.cause()));
 
     }
@@ -167,10 +167,10 @@ public class TransactionServiceImpl implements TransactionService {
             transaction.setStatus(Transaction.Status.FAILED);
             transaction.setFailureReason("Insufficient funds");
             return transactionRepository.updateStatus(transaction.getId(), failure.code() + failure.message(), Transaction.Status.FAILED, Transaction.Status.INITIATED)
-                    .peekLeft(failure1 -> log.error("Failed to update transaction {}. Reason: {}", transaction.getTransferId(), failure1.message(), failure1.cause()));
+                    .peekLeft(failure1 -> log.error("Failed to update transaction {}. Reason: {}", transaction.getInternalTransferId(), failure1.message(), failure1.cause()));
         }
 
-        SCHEDULED_EXECUTOR_SERVICE.scheduleWithFixedDelay(() -> determineFinalStatus(transaction.getTransferId()), 0, 3, TimeUnit.MINUTES);
+        SCHEDULED_EXECUTOR_SERVICE.scheduleWithFixedDelay(() -> determineFinalStatus(transaction.getInternalTransferId()), 0, 3, TimeUnit.MINUTES);
         return Either.left(failure);
     }
 

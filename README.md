@@ -134,3 +134,22 @@ make health       # Check service health status
 ./gradlew test           # Run tests
 ./gradlew bootJar        # Create executable jar
 ```
+## API Documentation
+```text
+POST http://localhost:8082/transfer
+```
+Sample
+```bash
+curl --location 'http://localhost:8080/transfer' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: csrf_token_f1de9e489ba88cb15968b97f40f59e8ef0da5ca03ad1f37fc13a2aa45a2512a9=1XcHp5mzcc/UoD8niGimPrD8Awg/11H2UIguyu5nWNw=; csrf_token_f960fc983a2bc719627550cc2cb3977e78dabb01d739a8430f1b5263a2c5e440=7A0NUxsCrdma7n4cRV2hd2DWEsCsiNSGMzG5AWJ5SbE=' \
+--data '{
+    "sender_account": "1112345678956yu",
+    "reference": "26oV3w0890w909",
+    "amount": 498.00,
+    "receiver_account": "2389456789",
+    "to_currency": "GBP",
+    "description": "Lead",
+    "from_currency": "USD"
+}'
+```

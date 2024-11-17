@@ -12,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -26,27 +24,34 @@ public class SettlementProcessor {
 
     @Scheduled(fixedRate = 1000) // Run every second
     public void processSettlements() {
-        transactionRepository.getSettlementEligibleTransactions(OffsetDateTime.now().minusSeconds(1), appConfiguration.getSettlementPollSize())
+        transactionRepository.getSettlementEligibleTransactions(appConfiguration.getSettlementPollSize())
                 .peekLeft(failure -> log.error("Failed to get settlement eligible transactions. Reason: {}", failure.message(), failure.cause()))
                 .peek(transactions -> transactions.forEach(this::process));
     }
 
     private void process(Transaction transaction) {
+        log.info("Starting Processing transaction: {}", transaction.getInternalTransferId());
         switch (transaction.getStatus()) {
             case FUNDS_LOCKED:
-                log.warn("Transaction not in a completed state. Transaction: {}", transaction);
+                log.warn("Transaction not in a completed state. Transaction: {}", transaction.getInternalTransferId());
                 processLockedTransaction(transaction);
                 break;
             case FAILED:
-                log.info("Transaction has failed. Returning funds to pool. Transaction: {}", transaction);
-                returnFundsToPool(transaction, Transaction.Status.FAILED, Transaction.Status.FUNDS_LOCKED, "Transaction failed");
+                log.info("Transaction has failed. Returning funds to pool. Transaction: {}", transaction.getInternalTransferId());
+                returnFundsToPool(transaction, Transaction.Status.FAILED, Transaction.Status.FAILED, "Transaction failed");
                 break;
             case COMPLETED:
-                log.info("Transaction has been completed. Skipping processing. Transaction: {}", transaction);
+                log.info("Transaction has been completed. Skipping processing. Transaction: {}", transaction.getInternalTransferId());
                 settle(transaction);
                 break;
             case REQUIRE_INTERVENTION:
-                log.warn("Transaction requires intervention. Another job handle these types. Transaction: {}", transaction);
+                log.warn("Transaction requires intervention. Another job handle these types. Transaction: {}", transaction.getInternalTransferId());
+                break;
+                // IN the real world, we will check the status of the transaction against another source and take appropriate action
+            case INITIATED:
+                log.warn("Transaction requires intervention. Another job handle these types. Transaction: {}", transaction.getInternalTransferId());
+                transactionRepository.markSettlementStatus(transaction.getId(), "Transaction requires intervention", Transaction.SettlementStatus.REQUIRE_INTERVENTION, Transaction.Status.EXPIRED, Transaction.Status.INITIATED)
+                        .peekLeft(failure -> log.error("Failed to mark transaction as require intervention. Reason: {}", failure.message(), failure.cause()));
                 break;
             default:
                 log.error("Unknown transaction status. Skipping processing. Transaction: {}", transaction);
@@ -67,6 +72,7 @@ public class SettlementProcessor {
     // although in real world, we would normally decouple this two. Marking as failed.  Then have another job to return the funds to the pool
     private void returnFundsToPool(Transaction transaction, Transaction.Status newTransaction, Transaction.Status oldTransactionStatus,  String message) {
         liquidityService.unlockBalance(transaction.getLockedId())
+                .peek(__ -> log.info("Funds have been returned to pool. Transaction: {}", transaction.getInternalTransferId()))
                 .flatMap(__ -> transactionRepository.markSettlementStatus(transaction.getId(), message, Transaction.SettlementStatus.SETTLEMENT_STOPPED, newTransaction, oldTransactionStatus))
                 .peekLeft(failure -> log.error("Failed to return locked funds. Reason: {}", failure.message(), failure.cause()))
                 .peekLeft(failure -> handleFailureUnlockingFunds(transaction.getId(), failure));
@@ -89,9 +95,9 @@ public class SettlementProcessor {
     }
 
     private void settle(Transaction transaction) {
-        log.warn("Transaction with lock status has already been unlocked. Transaction: {}. Unlock id {}", transaction.getId(), transaction.getUnlockedId());
+        log.warn("Transaction with lock status has already been unlocked. Transaction: {}. Unlock id {}", transaction.getId(), transaction.getLockedId());
         // not sure why we would have a transaction that has been unlocked but not completed
-        var lockEntry = ledgerRepository.getByLockId(transaction.getUnlockedId())
+        var lockEntry = ledgerRepository.getByLockId(transaction.getLockedId())
                 .peekLeft(failure -> log.error("Failed to get ledger entry for unlock id: {}. Reason: {}", transaction.getUnlockedId(), failure.message(), failure.cause()));
         if (lockEntry.isLeft()) {
             // if there is an error getting the unlock entry, we can't proceed. Hopefully another seperate process will pick this up
@@ -110,8 +116,9 @@ public class SettlementProcessor {
         }
 
         // at settlement time, we want to transfer the
-        liquidityService.debitLockedBalance(transaction.getUnlockedId())
+        liquidityService.debitLockedBalance(transaction.getLockedId())
                 .flatMap(__ -> transactionRepository.markSuccessfulSettlementStatus(transaction.getId(), Transaction.Status.COMPLETED))
-                .peekLeft(failure -> log.error("Failed to transfer unlocked funds. Reason: {}", failure.message(), failure.cause()));
+                .peekLeft(failure -> log.error("Failed to transfer unlocked funds. Reason: {}", failure.message(), failure.cause()))
+                .peek(failure -> log.info("Transaction has been settled. Transaction: {}", transaction));
     }
 }

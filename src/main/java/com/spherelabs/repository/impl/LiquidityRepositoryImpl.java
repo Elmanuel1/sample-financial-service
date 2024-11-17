@@ -76,7 +76,7 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .set(LEDGER.TRANSACTION_ID, liquidityMovement.transactionId())
                     .set(LEDGER.DESCRIPTION, "Lock funds for transaction " + liquidityMovement.transactionId())
                      .returning(LEDGER.ID)
-                     .fetchOne()
+                     .fetchSingle()
                      .component1();
         }));
     }
@@ -90,7 +90,7 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .from(LEDGER)
                     .where(LEDGER.ID.eq(lockId))
                     .and(LEDGER.TRANSACTION_TYPE.eq("lock"))
-                    .fetchOne();
+                    .fetchSingle();
 
             var lockedBalance = DSL.using(config)
                     .select(
@@ -126,7 +126,7 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .set(LEDGER.TRANSACTION_ID, lockedRecord.get(LEDGER.TRANSACTION_ID))
                     .set(LEDGER.DESCRIPTION, "Debit Position " + lockedRecord.get(LEDGER.ID))
                     .returning(LEDGER.ID)
-                    .fetchOne()
+                    .fetchSingle()
                     .component1();
 
         }));
@@ -140,7 +140,7 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .from(LEDGER)
                     .where(LEDGER.ID.eq(lockId))
                     .and(LEDGER.TRANSACTION_TYPE.eq("lock"))
-                    .fetchOne();
+                    .fetchSingle();
 
             var lockedBalance = DSL.using(config)
                     .select(
@@ -157,16 +157,7 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                 throw new ApplicationException(FailureCode.INSUFFICIENT_FUNDS);
             }
 
-            DSL.using(config)
-                    .update(LIQUIDITY_POOL)
-                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.subtract(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
-                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.AVAILABLE_BALANCE.add(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
-                    .set(LIQUIDITY_POOL.UPDATED_AT, OffsetDateTime.now())
-                    .where(LIQUIDITY_POOL.CURRENCY_CODE.eq(lockedRecord.get(LEDGER.CURRENCY_CODE)))
-                    .returning()
-                    .execute();
-
-            return DSL.using(config)
+            var record = DSL.using(config)
                     .insertInto(LEDGER)
                     .set(LEDGER.CURRENCY_CODE, lockedRecord.get(LEDGER.CURRENCY_CODE))
                     .set(LEDGER.TRANSACTION_TYPE, "unlock")
@@ -176,8 +167,19 @@ public class LiquidityRepositoryImpl implements LiquidityRepository {
                     .set(LEDGER.TRANSACTION_ID, lockedRecord.get(LEDGER.TRANSACTION_ID))
                     .set(LEDGER.DESCRIPTION, "Unlock Position " + lockedRecord.get(LEDGER.ID))
                     .returning(LEDGER.ID)
-                    .fetchOne()
+                    .fetchSingle()
                     .component1();
+
+            DSL.using(config)
+                    .update(LIQUIDITY_POOL)
+                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.LOCKED_BALANCE.subtract(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
+                    .set(LIQUIDITY_POOL.LOCKED_BALANCE, LIQUIDITY_POOL.AVAILABLE_BALANCE.add(lockedRecord.get(LEDGER.AMOUNT, BigDecimal.class)))
+                    .set(LIQUIDITY_POOL.UPDATED_AT, OffsetDateTime.now())
+                    .where(LIQUIDITY_POOL.CURRENCY_CODE.eq(lockedRecord.get(LEDGER.CURRENCY_CODE)))
+                    .returning()
+                    .execute();
+
+          return record;
         }));
     }
 }

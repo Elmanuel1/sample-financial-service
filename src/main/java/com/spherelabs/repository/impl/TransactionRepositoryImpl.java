@@ -10,7 +10,6 @@ import io.vavr.control.Either;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
-
 import org.jooq.RecordMapper;
 import org.jooq.impl.DSL;
 import org.jooq.types.YearToSecond;
@@ -80,7 +79,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 .set(TRANSACTION.CREATED_AT, transaction.getCreatedAt())
                 .set(TRANSACTION.DESCRIPTION, transaction.getDescription())
                 .returning()
-                .fetchOne(MAPPER))
+                .fetchSingle(MAPPER))
                 .peekLeft(failure -> log.error("Failed to insert new transaction", failure.cause()));
     }
 
@@ -99,11 +98,13 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
-    public Either<Failure, List<Transaction>> getSettlementEligibleTransactions(OffsetDateTime settlementDate, int limit) {
+    public Either<Failure, List<Transaction>> getSettlementEligibleTransactions(int limit) {
         return Eithers.of(() -> dsl.selectFrom(TRANSACTION)
-                .where(TRANSACTION.STATUS.eq(TransactionStatus.funds_locked)
-                        .and(TRANSACTION.SCHEDULED_SETTLEMENT_TIME.eq(settlementDate)))
+                .where(TRANSACTION.SETTLEMENT_STATUS.isNull())
+                .and(TRANSACTION.SCHEDULED_SETTLEMENT_TIME.lessOrEqual(OffsetDateTime.now()))
                 .limit(limit)
+                .forUpdate()
+                .skipLocked()
                 .fetch(MAPPER));
 
     }
@@ -118,7 +119,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 .where(TRANSACTION.ID.eq(id)
                 .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
                 .returning()
-                .fetchOne(MAPPER));
+                .fetchSingle(MAPPER));
     }
 
     @Override
@@ -130,7 +131,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 .where(TRANSACTION.ID.eq(id)
                 .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
                 .returning()
-                .fetchOne(MAPPER));
+                .fetchSingle(MAPPER));
     }
 
     @Override
@@ -142,7 +143,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 .where(TRANSACTION.ID.eq(id)
                         .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
                 .returning()
-                .fetchOne(MAPPER));
+                .fetchSingle(MAPPER));
     }
 
     @Override
@@ -164,7 +165,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 .where(TRANSACTION.ID.eq(id)
                         .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
                 .returning()
-                .fetchOne(MAPPER));
+                .fetchSingle(MAPPER));
     }
 
     @Override
@@ -176,7 +177,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 .where(TRANSACTION.ID.eq(id)
                         .and(TRANSACTION.STATUS.eq(TransactionStatus.valueOf(oldStatus.getValue()))))
                 .returning()
-                .fetchOne(MAPPER));
+                .fetchSingle(MAPPER));
     }
 
     @Override

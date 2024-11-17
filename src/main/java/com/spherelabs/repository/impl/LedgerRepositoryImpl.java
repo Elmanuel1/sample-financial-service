@@ -36,6 +36,6 @@ public class LedgerRepositoryImpl implements LedgerRepository {
         return Eithers.of(() -> dslContext.selectFrom(LEDGER)
                 .where(LEDGER.ID.eq(lockId))
                 .and(LEDGER.TRANSACTION_TYPE.eq(Transaction.Type.LOCK.getValue()))
-                .fetchOne(MAPPER));
+                .fetchSingle(MAPPER));
     }
 }

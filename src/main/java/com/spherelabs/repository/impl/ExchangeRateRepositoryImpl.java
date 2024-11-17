@@ -41,7 +41,7 @@ public class ExchangeRateRepositoryImpl implements ExchangeRateRepository {
                 .set(EXCHANGE_RATE.RATE, rate)
                 .set(EXCHANGE_RATE.EFFECTIVE_DATE, timestamp)
                 .returning()
-                .fetchOne()
+                .fetchSingle()
                 .into(ExchangeRate.class));
     }
 }

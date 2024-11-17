@@ -1,5 +1,4 @@
 package com.spherelabs.services.impl;
-
 import com.spherelabs.error.Failure;
 import com.spherelabs.error.FailureCode;
 import com.spherelabs.model.ExchangeRate;
