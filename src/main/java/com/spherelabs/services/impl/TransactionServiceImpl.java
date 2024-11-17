@@ -167,7 +167,7 @@ public class TransactionServiceImpl implements TransactionService {
         if (failure.code().equals(INSUFFICIENT_FUNDS.getCode())) {
             transaction.setStatus(Transaction.Status.FAILED);
             transaction.setFailureReason("Insufficient funds");
-            return transactionRepository.updateStatus(transaction.getId(), failure.code() + failure.message(), Transaction.Status.FAILED, Transaction.Status.INITIATED)
+            return transactionRepository.markSettlementStatus(transaction.getId(), failure.code() + failure.message(), Transaction.SettlementStatus.SETTLEMENT_STOPPED, Transaction.Status.FAILED, Transaction.Status.INITIATED)
                     .peekLeft(failure1 -> log.error("Failed to update transaction {}. Reason: {}", transaction.getInternalTransferId(), failure1.message(), failure1.cause()));
         }
 

@@ -25,4 +25,8 @@ public class ApplicationException extends RuntimeException {
         this.error = new APIError("api.validation.error", message);
         this.httpStatus = HttpStatus.BAD_REQUEST;
     }
+
+    public ApplicationException(String rebalancingFailed, Exception e) {
+        super(rebalancingFailed, e);
+    }
 }
