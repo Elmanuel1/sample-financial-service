@@ -38,5 +38,5 @@ public record TransferRequest(
     /**
      * The reference of the transaction
      */
-    @NotBlank String reference
+    @NotBlank @Size(max = 30) String reference
 ) {}
