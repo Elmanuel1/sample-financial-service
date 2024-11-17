@@ -15,10 +15,8 @@ This service handles cross-border payment processing with configurable margin ra
 ## Prerequisites
 
 - JDK 21
-- Gradle 8.x
 - Docker and Docker Compose
-- PostgreSQL 15 (if running locally)
-- Node.js (for auxiliary services)
+- Node (for currency services)
 
 ## Project Structure
 
